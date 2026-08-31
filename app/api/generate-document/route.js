@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDocumentModel } from '@/app/lib/gemini';
+import { generateContent } from '@/app/lib/gemini';
 import { DOCUMENT_GENERATION_PROMPT } from '@/app/lib/prompts';
 
 export async function POST(request) {
@@ -16,8 +16,6 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    const model = getDocumentModel();
-
     const langNote = language === 'hi' 
       ? '\n\nGenerate the document in Hindi (Devanagari script) with English legal terms. Include both Hindi and English versions if possible.'
       : '\n\nGenerate the document in English following standard Indian legal format.';
@@ -28,8 +26,7 @@ export async function POST(request) {
 
     const prompt = `${DOCUMENT_GENERATION_PROMPT}${langNote}\n\nGenerate a ${documentType} document with the following details:\n${fieldDetails}\n\nPlease generate the complete legal document format:`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
+    const response = await generateContent(prompt, { temperature: 0.5 });
 
     return NextResponse.json({ response });
   } catch (error) {

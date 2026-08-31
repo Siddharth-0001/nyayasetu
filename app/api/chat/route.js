@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getChatModel } from '@/app/lib/gemini';
+import { generateChatResponse } from '@/app/lib/gemini';
 import { LEGAL_CHAT_SYSTEM_PROMPT } from '@/app/lib/prompts';
 
 export async function POST(request) {
@@ -17,33 +17,29 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    const model = getChatModel();
-
     const langInstruction = language === 'hi' 
       ? '\n\nIMPORTANT: The user prefers Hindi. Respond primarily in Hindi (Devanagari script). You may use English for legal terms, Act names, and Section numbers.'
       : '';
 
-    const chatHistory = history.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    }));
+    const systemInstruction = LEGAL_CHAT_SYSTEM_PROMPT + langInstruction;
 
-    const chat = model.startChat({
-      history: [
-        {
-          role: 'user',
-          parts: [{ text: 'System instructions: ' + LEGAL_CHAT_SYSTEM_PROMPT + langInstruction }],
-        },
-        {
-          role: 'model',
-          parts: [{ text: 'Understood. I am NyayaSetu, your AI legal assistant for Indian law. I will provide accurate legal information with proper citations while being empathetic and accessible. How can I help you today?' }],
-        },
-        ...chatHistory,
-      ],
-    });
+    // Convert history to the new SDK format
+    const chatHistory = [
+      {
+        role: 'user',
+        parts: [{ text: 'System instructions: ' + systemInstruction }],
+      },
+      {
+        role: 'model',
+        parts: [{ text: 'Understood. I am NyayaSetu, your AI legal assistant for Indian law. I will provide accurate legal information with proper citations while being empathetic and accessible. How can I help you today?' }],
+      },
+      ...history.map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }],
+      })),
+    ];
 
-    const result = await chat.sendMessage(message);
-    const response = result.response.text();
+    const response = await generateChatResponse(message, chatHistory);
 
     return NextResponse.json({ response });
   } catch (error) {

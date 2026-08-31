@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAnalysisModel } from '@/app/lib/gemini';
+import { generateContent } from '@/app/lib/gemini';
 import { DOCUMENT_ANALYSIS_PROMPT } from '@/app/lib/prompts';
 
 export async function POST(request) {
@@ -16,16 +16,13 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    const model = getAnalysisModel();
-
     const langNote = language === 'hi' 
       ? '\n\nPlease provide the analysis in Hindi (Devanagari script). Keep legal terms and Act/Section names in English.'
       : '';
 
     const prompt = `${DOCUMENT_ANALYSIS_PROMPT}${langNote}\n\n--- DOCUMENT TO ANALYZE ---\nFile Type: ${fileType || 'text'}\n\n${content}\n\n--- END OF DOCUMENT ---\n\nPlease provide your detailed analysis:`;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
+    const response = await generateContent(prompt, { temperature: 0.3, topP: 0.8 });
 
     return NextResponse.json({ response });
   } catch (error) {

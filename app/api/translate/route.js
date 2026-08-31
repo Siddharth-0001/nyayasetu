@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTranslationModel } from '@/app/lib/gemini';
+import { generateContent } from '@/app/lib/gemini';
 import { TRANSLATION_PROMPT } from '@/app/lib/prompts';
 
 export async function POST(request) {
@@ -16,13 +16,10 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    const model = getTranslationModel();
-
     const langName = targetLanguage === 'hi' ? 'Hindi (Devanagari script)' : 'English';
     const prompt = `${TRANSLATION_PROMPT}\n\nTranslate to ${langName}:\n\n${text}`;
 
-    const result = await model.generateContent(prompt);
-    const translation = result.response.text();
+    const translation = await generateContent(prompt, { temperature: 0.2, maxOutputTokens: 4096 });
 
     return NextResponse.json({ translation });
   } catch (error) {

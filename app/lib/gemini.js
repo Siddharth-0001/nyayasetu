@@ -1,47 +1,46 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export function getChatModel() {
-  return genAI.getGenerativeModel({ 
-    model: 'gemini-1.5-flash',
-    generationConfig: {
+// Model name to use across the app
+const MODEL_NAME = 'gemini-3.6-flash';
+
+export function getAI() {
+  return ai;
+}
+
+export function getModelName() {
+  return MODEL_NAME;
+}
+
+export async function generateChatResponse(message, history = [], systemInstruction = '') {
+  const chat = ai.chats.create({
+    model: MODEL_NAME,
+    config: {
       temperature: 0.7,
       topP: 0.9,
       topK: 40,
       maxOutputTokens: 4096,
+      systemInstruction: systemInstruction || undefined,
     },
+    history: history,
   });
+
+  const response = await chat.sendMessage({ message });
+  return response.text;
 }
 
-export function getAnalysisModel() {
-  return genAI.getGenerativeModel({ 
-    model: 'gemini-1.5-flash',
-    generationConfig: {
-      temperature: 0.3,
-      topP: 0.8,
-      maxOutputTokens: 8192,
+export async function generateContent(prompt, config = {}) {
+  const response = await ai.models.generateContent({
+    model: MODEL_NAME,
+    contents: prompt,
+    config: {
+      temperature: config.temperature ?? 0.5,
+      topP: config.topP ?? 0.85,
+      maxOutputTokens: config.maxOutputTokens ?? 8192,
+      ...config,
     },
   });
-}
 
-export function getDocumentModel() {
-  return genAI.getGenerativeModel({ 
-    model: 'gemini-1.5-flash',
-    generationConfig: {
-      temperature: 0.5,
-      topP: 0.85,
-      maxOutputTokens: 8192,
-    },
-  });
-}
-
-export function getTranslationModel() {
-  return genAI.getGenerativeModel({ 
-    model: 'gemini-1.5-flash',
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 4096,
-    },
-  });
+  return response.text;
 }
